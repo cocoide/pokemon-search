@@ -1,25 +1,85 @@
-import logo from './logo.svg';
+
+import { useState, useEffect } from 'react';
+
 import './App.css';
+import Card from './components/Card/Card';
+import Navbar from './components/Card/Navbar';
+import { getAllPokemon, getPokemon } from './utils/pokemon';
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+  const initialURL = "https://pokeapi.co/api/v2/pokemon";
+  const [loading, setLoading] = useState(true);
+  const [pokemonData, setPokemonData] = useState([]);
+  const [nextURL, setNextURL] = useState("");
+  const [prevURL, setPrevtURL] = useState("");
+
+  useEffect(() => {
+    const FetchPokemonData = async () => {
+      //全てのポケモンデータを取得するまで
+      let res = await getAllPokemon(initialURL);
+      //詳細なポケモン情報を取得
+      loadPokemon(res.results);
+      setNextURL(res.next);
+      setPrevtURL(res.previous); //一ページ目なのでnullになる
+
+      setLoading(false);
+    };
+  
+    FetchPokemonData();
+  },[]);
+  
+  const loadPokemon = async (data) => {
+  let _pokemonData =   await Promise.all(
+    data.map((pokemon) => {
+      
+
+      let pokemonRecord = getPokemon(pokemon.url)
+      return pokemonRecord;
+     } )
   );
+  setPokemonData(_pokemonData)
+};
+  
+
+const handleNextPage = async ()=>{
+  setLoading(true);
+  let data = await getAllPokemon(nextURL);
+  // console.log(data);
+  await loadPokemon(data.results);
+  setNextURL(data.next);
+  setPrevtURL(data.previous);
+  setLoading(false);
+};
+const handlePrevPage = async ()=>{
+  if (!prevURL) return 
+  
+  setLoading(true);
+  let data = await getAllPokemon(prevURL);
+  await loadPokemon(data.results);
+  setPrevtURL(data.previous);
+  setLoading(false);
+};
+
+  return  <div className="App">
+    {loading ? (
+      <h1>ロード中</h1>
+     ): ( 
+      <>
+      <Navbar />
+      <div className="pokemonCardContainer">
+        {pokemonData.map((pokemon, i) => {
+        return <Card key={i} pokemon={pokemon}/>;
+
+      })}
+     </div>
+     <div className='btn'>
+      <button onClick= {handlePrevPage}>前へ</button>
+      <button onClick= {handleNextPage}>次へ</button>
+     </div>
+     </>
+    )}
+  </div>
+  
 }
 
 export default App;
